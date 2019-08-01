@@ -14,6 +14,7 @@ telomeres.length <- 10000
 
 ## Generating the artificial insertions dataset
 inserts.generic <- data.frame()
+
 for (j in seq(1:100)){
   inserts.generic.temp <- inserts
   rand_position <- c()
@@ -26,12 +27,16 @@ for (j in seq(1:100)){
   inserts.generic.temp$insert.genomic.coord.s.end <-
     inserts.generic.temp$insert.genomic.center + inserts.generic.temp$insert.length/2
   inserts.generic <- bind_rows(inserts.generic, inserts.generic.temp)
+  if(j %in% seq(0,100,10)){
+    print(paste(j,"out of 100 cycles finished"))
+  }
 }
 
 inserts.generic$telomeric.distance <- mapply(min,
                                              inserts.generic$insert.genomic.coord.s.start - telomeres.length,
                                              inserts.generic$Length.bp - telomeres.length - inserts.generic$insert.genomic.coord.s.end)
 
+rm(inserts.generic.temp)
 #for (j in seq(1:1000)){
 #  inserts1 <- inserts
 #  rand_position <- c()
@@ -77,6 +82,12 @@ wilcox.test(teldistanceVDJCH1$telomeric.distance, teldistanceGenerated$telomeric
 
 teldistance$telomeric.distance.Mbp <- teldistance$telomeric.distance/1000000
 
+
+inserts.generic$insert.type <- 'Generated'
+
+inserts.all <- bind_rows(inserts, inserts.generic)
+
+
 d <- ggplot(data = filter(teldistance, !inserts == 'Total'))+
   geom_boxplot(aes(x = inserts, y = telomeric.distance.Mbp), alpha = 0.2)+
   theme_classic()+
@@ -117,19 +128,17 @@ rdna <- filter(rdna, !str_detect(chromosome, 'chrM'))
 unique(rdna$chromosome)
 
 dist.to.closest.rdna <- c()
-for (i in seq_along(inserts$run.id)){
-  rdna.in.this.chrom <- rdna$chrom.center[rdna$chromosome == inserts$chromosome[i]]
-  rdna.dist <- min(abs(rdna.in.this.chrom - inserts$insert.genomic.center[i]))
+for (i in seq_along(inserts.all$run.id)){
+  rdna.in.this.chrom <- rdna$chrom.center[rdna$chromosome == inserts.all$chromosome[i]]
+  rdna.dist <- min(abs(rdna.in.this.chrom - inserts.all$insert.genomic.center[i]))
   dist.to.closest.rdna <- c(dist.to.closest.rdna, rdna.dist)
 }
 
-inserts$rdna.distance <- dist.to.closest.rdna
+inserts.all$rdna.distance <- dist.to.closest.rdna
 
 ## Calculating the distance to the closest rdna for generated data
 dist.to.closest.rdna <- c()
-inserts.generic1 <- inserts.generic
-inserts.generic <- inserts.generic1[1:530100,]
-inserts.generic <- inserts.generic1
+
 for (i in seq_along(inserts.generic$run.id)){
   rdna.in.this.chrom <- rdna$chrom.center[rdna$chromosome == inserts.generic$chromosome[i]]
   rdna.dist <- min(abs(rdna.in.this.chrom - inserts.generic$insert.genomic.center[i]))
@@ -137,9 +146,6 @@ for (i in seq_along(inserts.generic$run.id)){
 }
 
 inserts.generic$rdna.distance <- dist.to.closest.rdna
-inserts.generic$insert.type <- 'Generated'
-
-inserts.all <- bind_rows(inserts, inserts.generic)
 inserts.all$rdna.dist.mpb <- inserts.all$rdna.distance / 1000000
 
 install.packages("ggridges")
@@ -304,11 +310,13 @@ d <- ggplot(data = inserts.all)+
   geom_boxplot(aes(x = insert.type, y = NBCs), alpha = 0.2)+
   #geom_boxplot(aes(x = insert.type, y = CBs), alpha = 0.2)+
   theme_classic()+
-  #xlab("")+
-  #scale_x_discrete(labels = c('Random' = 'Random\nInsertions', 'Real' = 'Donors\nInsertions'))+
+  xlab("")+
+  ylab("")+
+  
+  scale_x_discrete(labels = c())+
   ylim(-10, 10)+
   #ylab("Expression difference\nof the closest gene, log2fold")+
-  xlab("Insert type")+
+  #xlab("Insert type")+
   theme(axis.text.x = element_text(size = 10, angle = 0, vjust = 0.6))
   #annotate('text', x = 2, y = 1, label = paste('p = ',p.GenvsVDJ), size = 4)+
   #annotate('text', x = 3, y = 1, label = paste('p = ',p.GenvsVDJCH1), size = 4)
@@ -323,8 +331,8 @@ d14 <- ggplot(data = inserts.all)+
   #scale_x_discrete(labels = c('Random' = 'Random\nInsertions', 'Real' = 'Donors\nInsertions'))+
   ylim(-10, 10)+
   #ylab("Expression difference\nof the closest gene, log2fold")+
-  xlab("Insert type")+
-  theme(axis.text.x = element_text(size = 16, angle = 0, vjust = 0.6))
+  #xlab("Insert type")+
+  #theme(axis.text.x = element_text(size = 16, angle = 0, vjust = 0.6))
 #annotate('text', x = 2, y = 1, label = paste('p = ',p.GenvsVDJ), size = 4)+
 #annotate('text', x = 3, y = 1, label = paste('p = ',p.GenvsVDJCH1), size = 4)
 #annotate('text', x = 4, y = 10, label = 'p = 6.51e-12', size = 5)
