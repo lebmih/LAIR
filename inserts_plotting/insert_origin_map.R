@@ -82,7 +82,7 @@ chrlen <- read.table(file = 'input/GRCh38_chrlength.txt',
                      sstringsAsFactors = FALSE)
 # Mapping the in vivo occuring insertions, omitting the in silico modelled
 # contigs.
-contigs <- contigs %>% dplyr::filter(ins.type.simple != "Generated")
+contigs <- contigs %>% dplyr::filter(ins.type != "Generated")
 
 
 # Data processing ---------------------------------------------------------
@@ -97,10 +97,10 @@ rm(columnstosep)
 contigs$ins.id <- seq(nrow(contigs))
 # The insertions of an undefined type (in which J segment was not located) are
 # not plotted and omitted from the further analysis.
-inserts <- inserts %>% dplyr::filter(ins.type.simple != "V-CH1")
+inserts <- inserts %>% dplyr::filter(ins.type != "V-CH1")
 
 inserts <- dplyr::select(inserts, sample.uid, insert.id.s., ins.id, chrom,
-                   min.g.start, max.g.end, insert.length, ins.type.simple,
+                   min.g.start, max.g.end, insert.length, ins.type,
                    IsVandConstInFrame.withoutStop, contig.id, ins.class,
                   population.simple)
 # Inserts originating from the undefined scaffolds and the mitochondrial genome
@@ -235,17 +235,22 @@ color_of_lines <- 'black'
 # Main plotting - the chromosomes and the triangles, representing the insert
 # origins.
 insert.origin.plot <- ggplot(data = chrlen)+
-  coord_cartesian(xlim = c(0, plot.width), ylim = c(0, plot.height))+
-  geom_segment(aes(x = AX, y = AY, xend = BX, yend = BY), alpha = 1, color = color_of_lines, size = 1)+
-  geom_point(aes(x = chromCenterX, y = chromCenterY), size = 2, shape = 21, fill = 'deeppink2')+
-  geom_text(aes(x = AX-35, y = AY+3, label = chrom), colour = color_of_lines)+
-  geom_text(aes(x = BX + 50, y = AY+3, label = Length.Mbp), size = 3, colour = color_of_lines)+
+  coord_cartesian(xlim = c(0, plot.width),
+                  ylim = c(0, plot.height))+
+  geom_segment(aes(x = AX, y = AY, xend = BX, yend = BY),
+               alpha = 1, color = color_of_lines, size = 1)+
+  geom_point(aes(x = chromCenterX, y = chromCenterY),
+             size = 2, shape = 21, fill = 'deeppink2')+
+  geom_text(aes(x = AX-35, y = AY+3, label = chrom)
+            colour = color_of_lines)+
+  geom_text(aes(x = BX + 50, y = AY+3, label = Length.Mbp),
+            size = 3, colour = color_of_lines)+
   geom_polygon(data = inserts,
-               aes(x=dotX, y=dotY, group = contig.id, fill = ins.type.simple), alpha = .8)+
-
-  scale_fill_manual(values = c("VDJ" = rgb(0,0,255, maxColorValue = 255),
-                                "J-CH1" = rgb(255,0,0, maxColorValue = 255),
-                                "V-CH1" = rgb(150,150,150, maxColorValue = 255)))+
+               aes(x=dotX, y=dotY, group = contig.id, fill = ins.type),
+               alpha = .8)+
+  scale_fill_manual(values = c("VDJ" = rgb(0,0,1),
+                                "J-CH1" = rgb(1,0,0),
+                                "V-CH1" = rgb(0.5,0.5,0.5)))+
   theme_void()
 
 
